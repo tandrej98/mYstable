@@ -15,46 +15,66 @@ class NameSpace(object):
         self.name_index_map = {}
         self.nodes = []
         self.tree = treelib.Tree()
-       
-
-    def node_for_path(self,pth): #TODO node traverse not working 
-        node = self.tree.get_node(pth)
-        if node is None:
-            comp = pth.split('/')
-            parent_pth = ""
-            for comp in pth:
-                child_pth = parent_pth + "/" + comp
-                node = self.tree.get_node(child_pth)
-                if node is None:
-                    self.tree.create_node(comp, child_pth, data=Node(), parent=parent_pth)
-                    parent_pth = child_pth
-        return node.data
 
     def space(self, name): 
-        if name not in name_index_map:
+        if name not in self.name_index_map:
             index = self.counter
-            name_index_map[name] = index
+            self.name_index_map[name] = index
             self.counter += 1
-            self.nodes.append([])
+            self.nodes.append(set())
             return index
-        return name_index_map[name]
+        return self.name_index_map[name]
 
-    def space_add(self,s_name, *paths): #TODO
-        space_id = space(s_name)
+    def space_add(self, s_name, *paths):
+        space_id = self.space(s_name)
+        self.nodes[space_id].update(paths)
         for pth in paths:
-            node = node_for_path(paths)
-            node.worlds_mask = node.worlds_mask | (1 << space_id)
+            node = self._node_for_path(pth)
+            node.worlds_mask_set(space_id)
 
-    def space_remove(self,s_name, *paths): #TODO
-        space_id = space(s_name)
+    def space_remove(self, s_name, *paths):
+        space_id = self.space(s_name)
+        self.nodes[space_id].difference_update(paths)
         for pth in paths:
-            node = node_for_path(pth)
-            node.worlds_mask = node.worlds_mask & ~(1 << space_id)
+            node = self._node_for_path(pth)
+            node.worlds_mask_reset(space_id)
+
+    def space_test(self, s_name, *paths):
+        space_id = self.space(s_name)
+        return all(
+            self._node_for_path(path).worlds_mask_test(space_id) for path in paths
+        )
+       
+    def _node_for_path(self, pth): #TODO node traverse not working 
+        node = self.tree.get_node(pth)
+        if node is None:
+            components = pth.split('/')
+            parent_pth = None
+            for comp in components:
+                if parent_pth is None:
+                    child_pth = ""
+                else:
+                    child_pth = parent_pth + "/" + comp
+                node = self.tree.get_node(child_pth)
+                if node is None:
+                    node = self.tree.create_node(comp, child_pth, data=Node(), parent=parent_pth)
+                parent_pth = child_pth
+        return node.data
 
 
 class Node:
     def __init__(self):
         self.worlds_mask = 0
+    
+    def worlds_mask_test(self, space_id):
+        return (self.worlds_mask & (1 << space_id)) != 0
+    
+    def worlds_mask_set(self, space_id):
+        self.worlds_mask = self.worlds_mask | (1 << space_id)
+    
+    def worlds_mask_reset(self, space_id):
+        self.worlds_mask = self.worlds_mask & ~(1 << space_id)
+
 
 class Register():
     def __init__(self):
