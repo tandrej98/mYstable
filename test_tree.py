@@ -14,7 +14,7 @@ class TestNameSpace(unittest.TestCase):
         self.assertFalse(self.ns.space_test('k', '/etc/gss/bsd'))
 
         self.ns.space_add(
-            'k', '/etc/gss/bc', '/etc/ssh/id_rsa', '/home/user/elis/images',
+            'k', 'etc/gss/bc', '/etc/ssh/id_rsa', '/home/user/elis/images',
             '/home/user/david/documents/','/e/sitepackages/tree',
         )
         self.ns.space_add(
