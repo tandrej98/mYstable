@@ -4,11 +4,7 @@ import treelib
 import hashlib
 from itertools import chain
  
-'''
-https://docs.python.org/3/library/graphlib.html?fbclid=IwAR3D0pteYdWhrzimpEqPXOAK_T4rcSkwWP1Z3bksuaxSLpT39_9PyDjJxVg
-'''
- 
-#
+
 class NameSpace(object):
     PATH_HASH_ALG = 'md5'
     PATH_SECURE_HASH = False
@@ -79,7 +75,7 @@ class NameSpace(object):
         self.vs[space_id].nodes.difference_update(paths)
         for pth in paths:
             node = self._node_for_path(pth)
-            node.spaces_mask_reset(space_id)
+            node.spaces_mask_unset(space_id)
  
     def _build_topo(self):
         ''' Build topological order from spaces, or raise CycleError'''
@@ -155,22 +151,18 @@ class NameSpace(object):
         node = None
         while True:
             digest = self._get_digest(digest)
-            digest_int = self._digest_to_int(digest)
-            node = self.tree.get_node(digest_int)
+            digest = digest[:self.PATH_DIGEST_LEN]
+            node = self.tree.get_node(digest)
             if node is None or node.data.path == pth:
                 break
-        return digest_int, node
+        return digest, node
  
     def _get_digest(self, input):
-        ''' Creates constructor, feed him and return hash '''
+        ''' Create a digest of the input byte sequence '''
         hasher = hashlib.new(self.PATH_HASH_ALG, usedforsecurity=self.PATH_SECURE_HASH)
         hasher.update(input)
         return hasher.digest()
-    
-    def _digest_to_int(self, digest):
-        ''' Convert bytes to int, with given length '''
-        return int.from_bytes(digest[:self.PATH_DIGEST_LEN], byteorder="little")
- 
+
  
 class Node:
     def __init__(self, path):
@@ -181,11 +173,11 @@ class Node:
         return (self.spaces_mask & (1 << space_id)) != 0
  
     def spaces_mask_set(self, space_id):
-        ''' We turn on the bit on '''
+        ''' We turn the bit on '''
         self.spaces_mask = self.spaces_mask | (1 << space_id)
  
-    def spaces_mask_reset(self, space_id):
-        ''' We turn on the bit off '''
+    def spaces_mask_unset(self, space_id):
+        ''' We turn the bit off '''
         self.spaces_mask = self.spaces_mask & ~(1 << space_id)
  
  
