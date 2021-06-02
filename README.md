@@ -8,11 +8,14 @@ __*Important*__: From version of Python3.9 > is graphlib integrated, otherwise i
 __*Modules*__: treelib (pip install treelib), graphlib (pip install graphlib-backport)
 
 __*Name*__: test_tree.py 
+
 __*Function*__: Testing functionality of tree.py. Unittest framework is used. Addition and removal to spaces is tested with adition to cycle error.
 
 __*Name*__: tree.py  
+
 __*Function*__: Main logic is here, classes: Namespace(addition and substraction of paths/spaces), VirtualSpace(holds info about each space and its properties), 
 Node(sets node on/off)
 
 __*Name*__: tree_structure.py 
+
 __*Function*__: Shows tree created from paths.
