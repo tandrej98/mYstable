@@ -1,13 +1,18 @@
 # bp1
 Module for mYstable Authorization server, not yet integrated based on abstraction of Constable's Authorization server.
 
-__*Prerequisites*__: Python
+__*Prerequisites*__: Python3.6 >=
 
-__*Modules*__: treelib (pip install treelib)
+__*Importand*__: From version of Python3.9 > is graphlib integrated, otherwise you need to install it
 
-__*Name*__: test_tree.py Function: Testing functionality of tree.py. Unittest framework is used. Addition and removal to spaces is tested with adition to cycle error.
+__*Modules*__: treelib (pip install treelib), graphlib (pip install graphlib-backport)
 
-Name: tree.py  Function: Main logic is here, classes: Namespace(addition and substraction of paths/spaces), VirtualSpace(holds info about each space and its properties), 
+__*Name*__: test_tree.py 
+__*Function*__: Testing functionality of tree.py. Unittest framework is used. Addition and removal to spaces is tested with adition to cycle error.
+
+__*Name*__: tree.py  
+__*Function*__: Main logic is here, classes: Namespace(addition and substraction of paths/spaces), VirtualSpace(holds info about each space and its properties), 
 Node(sets node on/off)
 
-Name: tree_structure.py Function: Shows tree created from paths.
+__*Name*__: tree_structure.py 
+__*Function*__: Shows tree created from paths.
