@@ -3,7 +3,7 @@ Module for mYstable Authorization server, not yet integrated based on abstractio
 
 __*Prerequisites*__: Python3.6 >=
 
-__*Important*__: From version of Python3.9 > is graphlib integrated, otherwise installation is needed.
+__*Important*__: From version of Python3.9 >= is graphlib integrated, otherwise installation is needed.
 
 __*Modules*__: treelib (pip install treelib), graphlib (pip install graphlib-backport)
 
