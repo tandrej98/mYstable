@@ -3,7 +3,7 @@ Module for mYstable Authorization server, not yet integrated based on abstractio
 
 __*Prerequisites*__: Python3.6 >=
 
-__*Important*__: From version of Python3.9 >= is graphlib integrated, otherwise installation is needed.
+__*Important*__: From version of Python3.9 >= is graphlib built-in, otherwise installation is needed.
 
 __*Modules*__: treelib (pip install treelib), graphlib (pip install graphlib-backport)
 
@@ -16,3 +16,5 @@ Node(sets node on/off)
 
 __*Name*__: tree_structure.py 
 __*Function*__: Shows tree created from paths.
+
+__*Testing*__: To run unittests <em> python test_tree.py </em> , to show tree structure <em>python tree_strcture.py </em>
