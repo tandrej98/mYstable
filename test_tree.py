@@ -6,8 +6,7 @@ class TestNameSpace(unittest.TestCase):
     def setUp(self):
         self.ns = tree.NameSpace()
 
-    def test_space_add(self):
-        # self.ns = tree.NameSpace()
+    def test_space_add(self) -> None:
         self.ns.space_add('k', '/etc/gss/bc')
         self.ns.space_update()
         self.assertTrue(self.ns.space_test('k', '/etc/gss/bc'))
@@ -41,8 +40,7 @@ class TestNameSpace(unittest.TestCase):
         self.assertTrue(self.ns.space_test('j', '/'))
         self.assertTrue(self.ns.space_test('j', '/home/user/elis'))
 
-    def test_space_sub(self):
-        # self.ns = tree.NameSpace()
+    def test_space_sub(self) -> None:
         self.ns.space_add(
             'k',
             '/etc/gss/bc',
@@ -100,8 +98,7 @@ class TestNameSpace(unittest.TestCase):
         self.assertFalse(self.ns.space_test('j', '/'))
         self.assertFalse(self.ns.space_test('j', '/home/user/elis'))
 
-    def test_spaces_update(self):
-        # self.ns = tree.NameSpace()
+    def test_spaces_update(self) -> None:
         self.ns.space_add('d', '/etc/gss/bc', '/etc/gss/mgr', '/etc/gss/phd')
         self.ns.space_add('k', 'd')
         self.ns.space_update()
@@ -112,7 +109,7 @@ class TestNameSpace(unittest.TestCase):
             self.ns.space_test('d', '/etc/gss/bc', '/etc/gss/mgr',
                                '/etc/gss/phd'))
 
-    def test_spaces_cycle(self):
+    def test_spaces_cycle(self) -> None:
         '''
         space1 = path1 path2 ... space2 
         space2 = path3 path4 ... space3
