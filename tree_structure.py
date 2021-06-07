@@ -1,9 +1,24 @@
+"""
+Initialize and fill instance of tree class. Shows name hierarchy from components.
+
+"""
 import treelib
 import tree
 from graphlib import *
 
 
 def show_tree() -> None:
+    """
+    Fill instance of tree by some data.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
     mt = tree.NameSpace()
     mt.space_add(
         'kento',
@@ -22,3 +37,4 @@ def show_tree() -> None:
 
 
 show_tree()
+

@@ -1,3 +1,20 @@
+"""
+This module manage virtual spaces and their properties.
+
+Classes
+-------
+Node 
+    bitmask of Node is stored here
+
+NameSpace
+    spaces management, addition, removal and cycle detection error
+
+VirtualSpace
+    properties of space are stored here
+
+
+"""
+
 import sys
 import graphlib
 import treelib
@@ -7,27 +24,149 @@ from typing import Optional
 
  
 class Node:
+    """
+    A class where bitmask of a Node is stored and managed.
+
+    ...
+
+    Attributes
+    ----------
+    path : str
+        name of given Node.
+    spaces_mask : int
+        bitmask of a given Node
+
+    Methods
+    -------
+    space_mask_test(space_id):
+        returns true if the bit is on.
+
+    spaces_mask_set(space_id):
+        activate bit with given id.
+
+    spaces_mask_unset(space_id):
+        deactivate bit with given id.
+    """
+
     def __init__(self, path: str) -> None:
+        """
+        Constructor of Node class, neccesary attributes are here.
+        
+        Each Node has its own bitmask(space_mask). Each bit represents one space, if is bit set to 1 given Node belongs to this space, 
+        otherwise not.
+
+        Parameters
+        ----------
+        path : str
+            name of given Node.
+        """
         self.path = path
         self.spaces_mask = 0
  
     def spaces_mask_test(self, space_id: int) -> bool:
+        """
+        Take bitmask of a given Node and make logical AND operation with second bitmask where is n-th bit active.
+
+        Parameters
+        ----------
+        space_id : int
+            index of space we want to activate.
+
+        Returns
+        -------
+        True or False, if a space is activate returns True .
+        """
         return (self.spaces_mask & (1 << space_id)) != 0
  
     def spaces_mask_set(self, space_id: int) -> None:
-        ''' We turn the bit on '''
+        """
+        Take bitmask of a Node and make logical OR with bitmask where is n-th bit activated.
+
+        Parameters
+        ----------
+        space_id : int
+            index of space we want to activate.
+
+        Returns
+        -------
+        None
+        """
         self.spaces_mask = self.spaces_mask | (1 << space_id)
  
     def spaces_mask_unset(self, space_id: int) -> None:
-        ''' We turn the bit off '''
+        """
+        Take bitmask of a Node and make logical AND with bitmask where is n-th bit activated.
+
+        Parameters
+        ----------
+        space_id : int
+            index of space we want to deactivate.
+
+        Returns
+        -------
+        None
+        """
         self.spaces_mask = self.spaces_mask & ~(1 << space_id)
 
 
 class NameSpace(object):
+    """
+    A class which add/substract paths to spaces, create nodes from paths, and check for cycles.
+
+    ...
+
+    Attributes
+    ----------
+    counter : int
+        number of created spaces
+    name_index_map : dict[str, int]
+        maps space names to their indices
+    tree : treelib.Tree
+        name hierarchy tree from paths
+    vs : list[VirtualSpace]
+        store each space properties
+
+
+
+    Methods
+    -------
+    space(name, create):
+        check if space exists if don't make entry into dict, returns index of space.
+
+    space_add(s_name, *paths):
+        add paths or spaces to denoted lists that are to be added to space
+
+    space_sub(s_name, *paths):
+        add paths or spaces to denoted lists that are to be substracted from space
+
+    space_test(s_name, *paths):
+
+    _space_add_real(s_name, *paths):
+        activate paths in space
+
+    _space_sub_real(s_name, *paths):
+        deactivate paths in space
+
+    _build_topo():
+        build a topological order from subspaces
+
+    space_update():
+        iterate over spaces in topological order and activate/deactivate their paths
+
+    _node_for_path(pth):
+        create node representation from path componenets
+
+    _unique_digest(pth):
+        check if is hash unique if not regenerate
+
+    _get_digest(input):
+        create hash from encoded path
+    """
+
     PATH_SECURE_HASH = False
     PATH_DIGEST_LEN = 8
  
-    ''' '''
+
     # _instance = None
  
     # def __new__(cls):
@@ -35,15 +174,29 @@ class NameSpace(object):
     #         cls._instance = super(NameSpace, cls).__new__(cls)
     #         cls._instance.init()
     #     return cls._instance
- 
+
     def __init__(self) -> None:
+        """Constructor of namespace class, spaces are stored here."""
         self.counter = 0
         self.name_index_map = {}
         self.tree = treelib.Tree()
         self.vs = []
- 
+
     def space(self, name: str , create: bool=True) -> Optional[int]:
-        ''' Initialize new VS if doesn't exist, increment counter '''
+        """
+        True - create new entry if missing. False - return None if does not exist.
+
+        Parameters
+        ----------
+        name : str
+            name of space
+        create : bool
+            True we create new entry, False we return index of space
+        
+        Returns
+        -------
+        Optional[int] index of given space
+        """
         if name not in self.name_index_map:
             if not create:
                 return None
@@ -55,7 +208,20 @@ class NameSpace(object):
         return self.name_index_map[name]
  
     def space_add(self, s_name: str, *paths: str) -> None:
-        ''' Add paths or spaces to denoted lists that are to be added from vs '''
+        """
+        Add paths or spaces to denoted lists that are to be added to space.
+
+        Parameters
+        ----------
+        s_name : str
+            name of space
+        *paths : str
+            pahts we want to add to space
+
+        Returns
+        -------
+        None
+        """
         space_id = self.space(s_name)
         for pth in paths:
             if pth[0] != '/':
@@ -64,7 +230,20 @@ class NameSpace(object):
                 self.vs[space_id].nodes_add.append(pth)
  
     def space_sub(self, s_name: str, *paths: str) -> None:
-        ''' Add paths or spaces to denoted lists that are to be removed from vs '''
+        """
+        Add paths or spaces to denoted lists that are to be substracted from space.
+
+        Parameters
+        ----------
+        s_name : str
+            name of space
+        *paths : str
+            paths that we want to substract from space
+
+        Returns
+        -------
+        None
+        """
         space_id = self.space(s_name)
         for pth in paths:
             if pth[0] != '/':
@@ -73,13 +252,42 @@ class NameSpace(object):
                 self.vs[space_id].nodes_sub.append(pth)
  
     def space_test(self, s_name: str, *paths: str) -> bool:
+        """
+        TODO.
+
+        TODO.
+
+        Parameters
+        ----------
+        s_name : str
+            name of space
+        *paths : str
+            pahts to be added
+
+        Returns
+        -------
+        bool
+        """
         space_id = self.space(s_name)
         return all(
             self._node_for_path(path).spaces_mask_test(space_id)
             for path in paths)
  
     def _space_add_real(self, s_name: str, *paths: str) -> None:
-        ''' Set mask on for paths in space '''
+        """
+        Activate paths in space.
+
+        Parameters
+        ----------
+        s_name : str
+            name of space
+        *paths : str
+            paths that will be active for space
+
+        Returns
+        -------
+        None
+        """
         space_id = self.space(s_name)
         self.vs[space_id].nodes.update(paths)
         for pth in paths:
@@ -87,7 +295,20 @@ class NameSpace(object):
             node.spaces_mask_set(space_id)
  
     def _space_sub_real(self, s_name: str, *paths: str) -> None:
-        ''' Unset mask on for paths in space '''
+        """
+        Deactivate paths in space.
+
+        Parameters
+        ----------
+        s_name : str
+            name of space
+        *paths : str
+            paths that will be unactive for space
+
+        Return
+        ------
+        None
+        """
         space_id = self.space(s_name)
         self.vs[space_id].nodes.difference_update(paths)
         for pth in paths:
@@ -95,7 +316,19 @@ class NameSpace(object):
             node.spaces_mask_unset(space_id)
  
     def _build_topo(self) -> list[int]:
-        ''' Build topological order from spaces, or raise CycleError'''
+        """
+        Build topological order from spaces, or raise CycleError.
+
+        Parameters
+        ----------
+        None
+
+        Return
+        ------
+        *topo.static.order() : list[int]
+            list of integers that represent cycle free ordering
+
+        """
         topo = graphlib.TopologicalSorter()
         for space in self.vs:
             predecessors = []
@@ -112,7 +345,17 @@ class NameSpace(object):
         return [*topo.static_order()]
  
     def space_update(self) -> None:
-        ''' Iterate over spaces and add them or remove them, then clear the list '''
+        """
+        Iterate over spaces and add them or remove them, then clear the list.
+
+        Parameters
+        ----------
+        None
+
+        Return
+        ------
+        None
+        """
         try:
             topo_order = self._build_topo()
         except graphlib.CycleError:
@@ -140,7 +383,18 @@ class NameSpace(object):
             space.nodes_sub.clear()
  
     def _node_for_path(self, pth: str) -> Node:
-        ''' Build a tree from paths '''
+        """
+        Build a tree from path components. Each path component is transformed to Node.
+
+        Parameters
+        ----------
+        pth : str
+            path from which is node created
+        Return
+        ------
+        node.data : Node
+            returns node data
+        """
         pth_digest, node = self._unique_digest(pth)
  
         if node is None:
@@ -163,7 +417,20 @@ class NameSpace(object):
         return node.data
  
     def _unique_digest(self, pth: str) -> bytes:
-        ''' Encode our input and generate hash until its unique '''
+        """
+        Encode our input and generate hash until its unique.
+
+        Parameters
+        ----------
+        pth : str
+            component of path that is feeded to hasher
+
+        Returns
+        -------
+        digest : bytes
+            return unique 8 byte hash(identified of node)
+
+        """
         digest = pth.encode("utf-8")
         node = None
         while True:
@@ -175,15 +442,62 @@ class NameSpace(object):
         return digest, node
  
     def _get_digest(self, input: bytes) -> bytes:
-        ''' Create a digest of the input byte sequence '''
+        """
+        Create a digest from bytes.
+
+        Parameters
+        ----------
+        input : bytes
+            encoded componenent that is feeded to hasher
+
+        Return
+        ------
+        hasher.digest() : bytes
+            returns one-way, non-cryptographic hash
+        """
         hasher = hashlib.md5(usedforsecurity= self.PATH_SECURE_HASH )
         hasher.update(input)
         return hasher.digest()
- 
- 
+
 class VirtualSpace:
-    ''' Each space has it's unique prop '''
+    """
+    A class which store properties of virtual space.
+
+    ...
+
+    Attributes
+    ----------
+    name : str
+        name of space
+    index : int
+        index of given space
+    nodes : set[Node]
+        set of Nodes of virtual space
+    nodes_add : list
+        represent nodes to be added
+    nodes_sub : list
+        represent nodes to be removed
+    subspaces_add : list
+        represent virtual spaces that will be added
+    subspaces_sub : list
+        represent virtual spaces that will be removed
+    """
+
     def __init__(self, name: str, index: int) -> None:
+        """
+        Constructor of VirtualSpace, initialize properties of virtual space.
+
+        Parameters
+        ----------
+        name : str
+            name of virtual space
+        index : int 
+            index of virtual space
+
+        Returns
+        -------
+        None
+        """
         self.name = name
         self.index = index
         self.nodes = set()

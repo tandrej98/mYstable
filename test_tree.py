@@ -1,12 +1,66 @@
+"""
+Unittest for tree.py module. Test basic functionality of this module.
+
+Classes
+-------
+TestNameSpace
+    Tests functionality of tree.py module.
+
+"""
 import tree
 import unittest
 
 
 class TestNameSpace(unittest.TestCase):
-    def setUp(self):
+    """
+    Class where is functionality of tree.py tested.
+
+    ...
+
+    Attributes
+    ----------
+    None
+
+    Methods
+    -------
+    setUp
+        initialize instance of tree
+    test_space_add
+        add spaces and paths
+    test_space_sub
+        remove spaces and paths
+    test_space_update
+        test update functionality
+    test_spaces_cycle
+        test cycle error detection
+    """
+
+    def setUp(self) -> None:
+        """
+        Initialize instance of tree, that will be filled.
+
+        Parameters
+        ----------
+        None
+
+        Return
+        ------
+        None
+        """
         self.ns = tree.NameSpace()
 
     def test_space_add(self) -> None:
+        """
+        Add spaces and paths to tree.
+
+        Parameters
+        ----------
+        None
+
+        Return
+        ------
+        None
+        """
         self.ns.space_add('k', '/etc/gss/bc')
         self.ns.space_update()
         self.assertTrue(self.ns.space_test('k', '/etc/gss/bc'))
@@ -41,6 +95,17 @@ class TestNameSpace(unittest.TestCase):
         self.assertTrue(self.ns.space_test('j', '/home/user/elis'))
 
     def test_space_sub(self) -> None:
+        """
+        Remove spaces and paths from tree.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         self.ns.space_add(
             'k',
             '/etc/gss/bc',
@@ -99,6 +164,17 @@ class TestNameSpace(unittest.TestCase):
         self.assertFalse(self.ns.space_test('j', '/home/user/elis'))
 
     def test_spaces_update(self) -> None:
+        """
+        Add spaces and paths to name hierarchy and update the information.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         self.ns.space_add('d', '/etc/gss/bc', '/etc/gss/mgr', '/etc/gss/phd')
         self.ns.space_add('k', 'd')
         self.ns.space_update()
@@ -110,6 +186,17 @@ class TestNameSpace(unittest.TestCase):
                                '/etc/gss/phd'))
 
     def test_spaces_cycle(self) -> None:
+        """
+        Create cycle from spaces.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         '''
         space1 = path1 path2 ... space2 
         space2 = path3 path4 ... space3
