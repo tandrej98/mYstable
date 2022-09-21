@@ -1,5 +1,5 @@
- """
-    Unittest for tree.py module. Test basic functionality of this module.
+"""
+    Unittest for namespace.py module. Test basic functionality of this module.
     Copyright (C) {2021}  {Alica Ondreakova}
 
     This program is free software: you can redistribute it and/or modify
@@ -18,21 +18,21 @@
 """
 
 """
-Unittest for tree.py module. Test basic functionality of this module.
+Unittest for namespace.py module. Test basic functionality of this module.
 
 Classes
 -------
 TestNameSpace
-    Tests functionality of tree.py module.
+    Tests functionality of namespace.py module.
 
 """
-import tree
+import namespace
 import unittest
 
 
 class TestNameSpace(unittest.TestCase):
     """
-    Class where is functionality of tree.py tested.
+    Class where is functionality of namespace.py tested.
 
     ...
 
@@ -66,7 +66,7 @@ class TestNameSpace(unittest.TestCase):
         ------
         None
         """
-        self.ns = tree.NameSpace()
+        self.ns = namespace.NameSpace()
 
     def test_space_add(self) -> None:
         """

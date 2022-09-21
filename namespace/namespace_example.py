@@ -1,5 +1,5 @@
- """
-    Tree structure for tree.py module. Initialize and fill instance of tree class. Shows name hierarchy from components.
+"""
+    Tree structure for namespace.py module. Initialize and fill instance of tree class. Shows name hierarchy from components.
     Copyright (C) {2021}  {Alica Ondreakova}
     
     This program is free software: you can redistribute it and/or modify
@@ -20,9 +20,7 @@
 Initialize and fill instance of tree class. Shows name hierarchy from components.
 
 """
-import treelib
-import tree
-from graphlib import *
+import namespace
 
 
 def show_tree() -> None:
@@ -37,7 +35,7 @@ def show_tree() -> None:
     -------
     None
     """
-    mt = tree.NameSpace()
+    mt = namespace.NameSpace()
     mt.space_add(
         'kento',
         '/etc/gss/bc',
