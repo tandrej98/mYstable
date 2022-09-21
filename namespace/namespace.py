@@ -184,7 +184,6 @@ class NameSpace(object):
     PATH_SECURE_HASH = False
     PATH_DIGEST_LEN = 8
 
-
     # _instance = None
 
     # def __new__(cls):
@@ -200,7 +199,7 @@ class NameSpace(object):
         self.tree = treelib.Tree()
         self.vs = []
 
-    def space(self, name: str , create: bool=True) -> Optional[int]:
+    def space(self, name: str, create: bool = True) -> Optional[int]:
         """
         True - create new entry if missing. False - return None if does not exist.
 
@@ -473,9 +472,10 @@ class NameSpace(object):
         hasher.digest() : bytes
             returns one-way, non-cryptographic hash
         """
-        hasher = hashlib.md5(usedforsecurity= self.PATH_SECURE_HASH )
+        hasher = hashlib.md5(usedforsecurity=self.PATH_SECURE_HASH)
         hasher.update(input)
         return hasher.digest()
+
 
 class VirtualSpace:
     """
