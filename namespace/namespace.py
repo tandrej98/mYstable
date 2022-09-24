@@ -282,9 +282,7 @@ class NameSpace(object):
 
     def space_test(self, s_name: str, *paths: str) -> bool:
         """
-        TODO.
-
-        TODO.
+        Check whether the supplied space contains all the paths.
 
         Parameters
         ----------
