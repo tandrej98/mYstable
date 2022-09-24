@@ -1,5 +1,7 @@
 """
-    The namespace.py module. This module manage virtual spaces and their properties.
+    The namespace.py module. This module manage virtual spaces and their
+    properties.
+
     Copyright (C) {2021}  {Alica Ondreakova}
     
     This program is free software: you can redistribute it and/or modify
@@ -70,8 +72,9 @@ class Node:
         """
         Constructor of Node class, neccesary attributes are here.
         
-        Each Node has its own bitmask(space_mask). Each bit represents one space, if is bit set to 1 given Node belongs to this space, 
-        otherwise not.
+        Each Node has its own bitmask(space_mask). Each bit represents one
+        space, if is bit set to 1 given Node belongs to this space, otherwise
+        not.
 
         Parameters
         ----------
@@ -83,7 +86,8 @@ class Node:
 
     def spaces_mask_test(self, space_id: int) -> bool:
         """
-        Take bitmask of a given Node and make logical AND operation with second bitmask where is n-th bit active.
+        Take bitmask of a given Node and make logical AND operation with second
+        bitmask where is n-th bit active.
 
         Parameters
         ----------
@@ -98,7 +102,8 @@ class Node:
 
     def spaces_mask_set(self, space_id: int) -> None:
         """
-        Take bitmask of a Node and make logical OR with bitmask where is n-th bit activated.
+        Take bitmask of a Node and make logical OR with bitmask where is n-th
+        bit activated.
 
         Parameters
         ----------
@@ -113,7 +118,8 @@ class Node:
 
     def spaces_mask_unset(self, space_id: int) -> None:
         """
-        Take bitmask of a Node and make logical AND with bitmask where is n-th bit activated.
+        Take bitmask of a Node and make logical AND with bitmask where is n-th
+        bit activated.
 
         Parameters
         ----------
@@ -129,7 +135,8 @@ class Node:
 
 class NameSpace(object):
     """
-    A class which add/substract paths to spaces, create nodes from paths, and check for cycles.
+    A class which add/substract paths to spaces, create nodes from paths, and
+    check for cycles.
 
     ...
 
@@ -149,13 +156,15 @@ class NameSpace(object):
     Methods
     -------
     space(name, create):
-        check if space exists if don't make entry into dict, returns index of space.
+        check if space exists if don't make entry into dict, returns index of
+        space.
 
     space_add(s_name, *paths):
         add paths or spaces to denoted lists that are to be added to space
 
     space_sub(s_name, *paths):
-        add paths or spaces to denoted lists that are to be substracted from space
+        add paths or spaces to denoted lists that are to be substracted from
+        space
 
     space_test(s_name, *paths):
 
@@ -169,7 +178,8 @@ class NameSpace(object):
         build a topological order from subspaces
 
     space_update():
-        iterate over spaces in topological order and activate/deactivate their paths
+        iterate over spaces in topological order and activate/deactivate their
+        paths
 
     _node_for_path(pth):
         create node representation from path componenets
@@ -201,7 +211,8 @@ class NameSpace(object):
 
     def space(self, name: str, create: bool = True) -> Optional[int]:
         """
-        True - create new entry if missing. False - return None if does not exist.
+        True - create new entry if missing. False - return None if does not
+        exist.
 
         Parameters
         ----------
@@ -248,7 +259,8 @@ class NameSpace(object):
 
     def space_sub(self, s_name: str, *paths: str) -> None:
         """
-        Add paths or spaces to denoted lists that are to be substracted from space.
+        Add paths or spaces to denoted lists that are to be substracted from
+        space.
 
         Parameters
         ----------
@@ -401,7 +413,8 @@ class NameSpace(object):
 
     def _node_for_path(self, pth: str) -> Node:
         """
-        Build a tree from path components. Each path component is transformed to Node.
+        Build a tree from path components. Each path component is transformed
+        to Node.
 
         Parameters
         ----------

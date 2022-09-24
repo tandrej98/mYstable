@@ -1,5 +1,7 @@
 """
-    Tree structure for namespace.py module. Initialize and fill instance of tree class. Shows name hierarchy from components.
+    Tree structure for namespace.py module. Initialize and fill instance of
+    tree class. Shows name hierarchy from components.
+
     Copyright (C) {2021}  {Alica Ondreakova}
     
     This program is free software: you can redistribute it and/or modify
@@ -17,7 +19,8 @@
 """
 
 """
-Initialize and fill instance of tree class. Shows name hierarchy from components.
+Initialize and fill instance of tree class. Shows name hierarchy from 
+components.
 
 """
 import namespace
