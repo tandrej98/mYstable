@@ -46,13 +46,47 @@ def show_tree() -> None:
         '/home/user/elis/images',
         '/home/user/david/documents/',
         '/e/sitepackages/tree',
+        '/etc/*'
+    )
+    mt.space_add(
+        'kirk',
+        '/etc/gss/bc',
+        '/etc/gss/ab',
+        '/home/*'
     )
 
-    mt.space_test('kento', '/etc/gss/bc')
-    mt.space_test('kento', 'etc/ssh/id_rsa')
-    mt.space_test('kento', '/home/user/elis/images')
-    mt.space_test('kento', '/home/user/david/documents/')
-    mt.tree.show()
+    mt.space_update()
+    space_contains(mt, 'kento', '/etc/gss/bc')
+    space_contains(mt, 'kento', 'etc/ssh/id_rsa')
+    space_contains(mt, 'kento', '/home/user/elis/images')
+    space_contains(mt, 'kento', '/home/user/david/documents/')
+    space_contains(mt, 'kento', '/etc/gss/ab')
+    space_contains(mt, 'kirk', '/etc/gss/ab')
+    space_contains(mt, 'kirk', '/etc/gss/bc')
+    space_contains(mt, 'kirk', '/home/user/elis/images')
+
+    mt.print()
+
+
+def space_contains(name_space: namespace.NameSpace, space: str, path: str):
+    """
+    Print whether the virtual space in namespace contains the path.
+
+    Parameters
+    ----------
+    name_space : namespace.NameSpace
+            NameSpace to work with
+    space : str
+            name of virtual space we want to check the path in
+    path : str
+            path which existence to check in virtual space
+
+    Returns
+    -------
+    None
+    """
+    result = name_space.space_test(space, path)
+    print(f'space: {space}, path: {path}, result: {result}')
 
 
 show_tree()
