@@ -114,6 +114,10 @@ class TestNameSpace(unittest.TestCase):
         self.assertTrue(self.ns.space_test('j', '/'))
         self.assertTrue(self.ns.space_test('j', '/home/user/elis'))
 
+        self.ns.space_add('l', '/etc/*')
+        self.ns.space_update()
+        self.assertTrue(self.ns.space_test('l', '/etc/*'))
+
     def test_space_sub(self) -> None:
         """
         Remove spaces and paths from tree.
