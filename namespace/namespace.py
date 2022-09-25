@@ -41,6 +41,7 @@ import treelib
 import hashlib
 from itertools import chain
 from typing import Optional
+from os.path import normpath, basename
 
 
 class Node:
@@ -66,9 +67,12 @@ class Node:
 
     spaces_mask_unset(space_id):
         deactivate bit with given id.
+
+    node_info():
+        Return string with information needed for printing.
     """
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, virtual_spaces: list) -> None:
         """
         Constructor of Node class, neccesary attributes are here.
         
@@ -79,10 +83,13 @@ class Node:
         Parameters
         ----------
         path : str
-            name of given Node.
+            Name of given Node.
+        virtual_spaces : list
+            Reference to list of virtual spaces contained in parent namespace.
         """
         self.path = path
         self.spaces_mask = 0
+        self.virtual_spaces = virtual_spaces
 
     def spaces_mask_test(self, space_id: int) -> bool:
         """
@@ -132,6 +139,32 @@ class Node:
         """
         self.spaces_mask = self.spaces_mask & ~(1 << space_id)
 
+    @property
+    def node_info(self) -> str:
+        """
+        Create a string containing the tag of this node and other information
+        needed for printing. For Namespace root empty string is returned.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        String containing information needed for printing the node.
+        """
+        if self.path == '':
+            return ''
+
+        vs = []
+        name = basename(normpath(self.path))
+
+        for i, v in enumerate(self.virtual_spaces):
+            if self.spaces_mask_test(i):
+                vs.append(v.name)
+
+        return f'{name} vs={vs}'
+
 
 class NameSpace(object):
     """
@@ -167,6 +200,9 @@ class NameSpace(object):
         space
 
     space_test(s_name, *paths):
+
+    print():
+        Print the contents of the namespace.
 
     _space_add_real(s_name, *paths):
         activate paths in space
@@ -299,6 +335,20 @@ class NameSpace(object):
         return all(
             self._node_for_path(path).spaces_mask_test(space_id)
             for path in paths)
+
+    def print(self):
+        """
+        Print the contents of the namespace.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        self.tree.show(data_property='node_info')
 
     def _space_add_real(self, s_name: str, *paths: str) -> None:
         """
@@ -439,7 +489,7 @@ class NameSpace(object):
                     node = self.tree.create_node(tag=comp,
                                                  identifier=child_pth_digest,
                                                  parent=parent_pth_digest,
-                                                 data=Node(child_pth))
+                                                 data=Node(child_pth, self.vs))
                 parent_pth = child_pth
                 parent_pth_digest = child_pth_digest
         return node.data
