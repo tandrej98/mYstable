@@ -52,10 +52,13 @@ def show_tree() -> None:
         'kirk',
         '/etc/gss/bc',
         '/etc/gss/ab',
-        '/home/*'
+        '/home/*',
+        '/home/user/elis/images'
     )
 
     mt.space_update()
+
+    print('tree after adding')
     space_contains(mt, 'kento', '/etc/gss/bc')
     space_contains(mt, 'kento', 'etc/ssh/id_rsa')
     space_contains(mt, 'kento', '/home/user/elis/images')
@@ -64,7 +67,15 @@ def show_tree() -> None:
     space_contains(mt, 'kirk', '/etc/gss/ab')
     space_contains(mt, 'kirk', '/etc/gss/bc')
     space_contains(mt, 'kirk', '/home/user/elis/images')
+    mt.print()
 
+    mt.space_sub('kento', '/home/user/elis/images')
+    mt.space_sub('kirk', '/home/user/elis/images')
+    mt.space_update()
+
+    print('tree after removing')
+    space_contains(mt, 'kento', '/home/user/elis/images')
+    space_contains(mt, 'kirk', '/home/user/elis/images')
     mt.print()
 
 
