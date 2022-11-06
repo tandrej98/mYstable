@@ -56,6 +56,10 @@ class Node:
         name of given Node.
     spaces_mask : int
         bitmask of a given Node
+    by_rule_mask : int
+        bitmask that tracks if the space was added by a rule
+    virtual_spaces : list
+        a reference to alist of all virtual space names
 
     Methods
     -------
@@ -89,6 +93,7 @@ class Node:
         """
         self.path = path
         self.spaces_mask = 0
+        self.by_rule_mask = 0
         self.virtual_spaces = virtual_spaces
 
     def spaces_mask_test(self, space_id: int) -> bool:
@@ -107,7 +112,7 @@ class Node:
         """
         return (self.spaces_mask & (1 << space_id)) != 0
 
-    def spaces_mask_set(self, space_id: int) -> None:
+    def spaces_mask_set(self, space_id: int, by_rule: bool = True) -> None:
         """
         Take bitmask of a Node and make logical OR with bitmask where is n-th
         bit activated.
@@ -116,14 +121,19 @@ class Node:
         ----------
         space_id : int
             index of space we want to activate.
+        by_rule : bool
+            tracks if space was set by a rule or not
 
         Returns
         -------
         None
         """
+        if by_rule:
+            self.by_rule_mask = self.by_rule_mask | (1 << space_id)
+
         self.spaces_mask = self.spaces_mask | (1 << space_id)
 
-    def spaces_mask_unset(self, space_id: int) -> None:
+    def spaces_mask_unset(self, space_id: int, by_rule: bool = True) -> None:
         """
         Take bitmask of a Node and make logical AND with bitmask where is n-th
         bit activated.
@@ -132,12 +142,34 @@ class Node:
         ----------
         space_id : int
             index of space we want to deactivate.
+        by_rule : bool
+            tracks if space was set by a rule or not
 
         Returns
         -------
         None
         """
+        if by_rule:
+            self.by_rule_mask = self.by_rule_mask | (1 << space_id)
+
         self.spaces_mask = self.spaces_mask & ~(1 << space_id)
+
+    def was_created_by_rule(self, space_id: int) -> bool:
+        """
+        Check if a space was set by a rule or not. Take bitmask of spaces
+        activated by a rule and do logical AND operation with
+        second bitmask where only n-th bit active.
+
+        Parameters
+        ----------
+        space_id : int
+            index of space we want to check if set by rule.
+
+        Returns
+        -------
+        True or False, if a space was added by a rule returns True .
+        """
+        return (self.by_rule_mask & (1 << space_id)) != 0
 
     @property
     def node_info(self) -> str:
@@ -161,7 +193,8 @@ class Node:
 
         for i, v in enumerate(self.virtual_spaces):
             if self.spaces_mask_test(i):
-                vs.append(v.name)
+                inherited = f'{"" if self.was_created_by_rule(i) else "(I)"}'
+                vs.append(f'{v.name}{inherited}')
 
         return f'{name} vs={vs}'
 
@@ -183,6 +216,8 @@ class NameSpace(object):
         name hierarchy tree from paths
     vs : list[VirtualSpace]
         store each space properties
+    processing_rules : bool
+        track whether the namespace is processing rules or inheritance
 
 
 
@@ -244,6 +279,7 @@ class NameSpace(object):
         self.name_index_map = {}
         self.tree = treelib.Tree()
         self.vs = []
+        self.processing_rules = True
 
     def space(self, name: str, create: bool = True) -> Optional[int]:
         """
@@ -369,7 +405,7 @@ class NameSpace(object):
         self.vs[space_id].nodes.update(paths)
         for pth in paths:
             node = self._node_for_path(pth)
-            node.spaces_mask_set(space_id)
+            node.spaces_mask_set(space_id, self.processing_rules)
 
     def _space_sub_real(self, s_name: str, *paths: str) -> None:
         """
@@ -390,7 +426,7 @@ class NameSpace(object):
         self.vs[space_id].nodes.difference_update(paths)
         for pth in paths:
             node = self._node_for_path(pth)
-            node.spaces_mask_unset(space_id)
+            node.spaces_mask_unset(space_id, self.processing_rules)
 
     def _build_topo(self) -> list[int]:
         """
