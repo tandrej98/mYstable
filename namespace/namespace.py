@@ -60,6 +60,8 @@ class Node:
         bitmask that tracks if the space was added by a rule
     virtual_spaces : list
         a reference to alist of all virtual space names
+    created_by_rule : bool
+        track whether node created by rule or not
 
     Methods
     -------
@@ -76,7 +78,8 @@ class Node:
         Return string with information needed for printing.
     """
 
-    def __init__(self, path: str, virtual_spaces: list) -> None:
+    def __init__(self, path: str, virtual_spaces: list,
+                 created_by_rule: bool = False) -> None:
         """
         Constructor of Node class, neccesary attributes are here.
         
@@ -90,11 +93,14 @@ class Node:
             Name of given Node.
         virtual_spaces : list
             Reference to list of virtual spaces contained in parent namespace.
+        created_by_rule : bool
+            Is Node created by rule or not.
         """
         self.path = path
         self.spaces_mask = 0
         self.by_rule_mask = 0
         self.virtual_spaces = virtual_spaces
+        self.created_by_rule = created_by_rule
 
     def spaces_mask_test(self, space_id: int) -> bool:
         """
@@ -154,7 +160,7 @@ class Node:
 
         self.spaces_mask = self.spaces_mask & ~(1 << space_id)
 
-    def was_created_by_rule(self, space_id: int) -> bool:
+    def was_added_by_rule(self, space_id: int) -> bool:
         """
         Check if a space was set by a rule or not. Take bitmask of spaces
         activated by a rule and do logical AND operation with
@@ -190,13 +196,14 @@ class Node:
 
         vs = []
         name = basename(normpath(self.path))
+        by_rule = f'{"(R)" if self.created_by_rule else ""}'
 
         for i, v in enumerate(self.virtual_spaces):
             if self.spaces_mask_test(i):
-                inherited = f'{"" if self.was_created_by_rule(i) else "(I)"}'
+                inherited = f'{"" if self.was_added_by_rule(i) else "(I)"}'
                 vs.append(f'{v.name}{inherited}')
 
-        return f'{name} vs={vs}'
+        return f'{name}{by_rule} vs={vs}'
 
 
 class NameSpace(object):
@@ -384,6 +391,7 @@ class NameSpace(object):
         -------
         None
         """
+        print(f'(I) - Space added by inheritance\n(R) - Node created by rule')
         self.tree.show(data_property='node_info')
 
     def _space_add_real(self, s_name: str, *paths: str) -> None:
@@ -404,7 +412,7 @@ class NameSpace(object):
         space_id = self.space(s_name)
         self.vs[space_id].nodes.update(paths)
         for pth in paths:
-            node = self._node_for_path(pth)
+            node = self._node_for_path(pth, True)
             node.spaces_mask_set(space_id, self.processing_rules)
 
     def _space_sub_real(self, s_name: str, *paths: str) -> None:
@@ -425,7 +433,7 @@ class NameSpace(object):
         space_id = self.space(s_name)
         self.vs[space_id].nodes.difference_update(paths)
         for pth in paths:
-            node = self._node_for_path(pth)
+            node = self._node_for_path(pth, True)
             node.spaces_mask_unset(space_id, self.processing_rules)
 
     def _build_topo(self) -> list[int]:
@@ -495,7 +503,7 @@ class NameSpace(object):
             space.subspaces_sub.clear()
             space.nodes_sub.clear()
 
-    def _node_for_path(self, pth: str) -> Node:
+    def _node_for_path(self, pth: str, is_creation: bool = False) -> Node:
         """
         Build a tree from path components. Each path component is transformed
         to Node.
@@ -504,6 +512,8 @@ class NameSpace(object):
         ----------
         pth : str
             path from which is node created
+        is_creation : bool
+            tracks if node is expected to be created or only tested
         Return
         ------
         node.data : Node
@@ -528,6 +538,8 @@ class NameSpace(object):
                                                  data=Node(child_pth, self.vs))
                 parent_pth = child_pth
                 parent_pth_digest = child_pth_digest
+        if is_creation and self.processing_rules:
+            node.data.created_by_rule = True
         return node.data
 
     def _unique_digest(self, pth: str) -> bytes:
