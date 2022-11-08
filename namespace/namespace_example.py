@@ -24,6 +24,7 @@ components.
 
 """
 import namespace
+import treelib.tree
 
 
 def show_tree() -> None:
@@ -46,13 +47,13 @@ def show_tree() -> None:
         '/home/user/elis/images',
         '/home/user/david/documents/',
         '/e/sitepackages/tree',
-        '/etc/*'
+        '/etc/.*'
     )
     mt.space_add(
         'kirk',
         '/etc/gss/bc',
         '/etc/gss/ab',
-        '/home/*',
+        '/home/.*',
         '/home/user/elis/images'
     )
 
