@@ -69,14 +69,14 @@ class Node:
 
     Attributes
     ----------
+    vs : list
+        a class attribute containing a list of all existing virtual spaces
     path : str
         name of given Node.
     spaces_mask : int
         bitmask of a given Node
     by_rule_mask : int
         bitmask that tracks if the space was added by a rule
-    virtual_spaces : list
-        a reference to alist of all virtual space names
     created_by_rule : bool
         track whether node created by rule or not
 
@@ -95,8 +95,9 @@ class Node:
         Return string with information needed for printing.
     """
 
-    def __init__(self, path: str, virtual_spaces: list,
-                 created_by_rule: bool = False) -> None:
+    vs = []
+
+    def __init__(self, path: str, created_by_rule: bool = False) -> None:
         """
         Constructor of Node class, neccesary attributes are here.
         
@@ -108,15 +109,12 @@ class Node:
         ----------
         path : str
             Name of given Node.
-        virtual_spaces : list
-            Reference to list of virtual spaces contained in parent namespace.
         created_by_rule : bool
             Is Node created by rule or not.
         """
         self.path = path
         self.spaces_mask = 0
         self.by_rule_mask = 0
-        self.virtual_spaces = virtual_spaces
         self.created_by_rule = created_by_rule
 
     def spaces_mask_test(self, space_id: int) -> bool:
@@ -207,7 +205,7 @@ class Node:
         list of space names that this node belongs to.
         """
         virtual_spaces = []
-        for idx, space in enumerate(self.virtual_spaces):
+        for idx, space in enumerate(Node.vs):
             if self.spaces_mask_test(idx):
                 virtual_spaces.append(space.name)
         return virtual_spaces
@@ -233,7 +231,7 @@ class Node:
         name = basename(normpath(self.path))
         by_rule = f'{"(R)" if self.created_by_rule else ""}'
 
-        for i, v in enumerate(self.virtual_spaces):
+        for i, v in enumerate(Node.vs):
             if self.spaces_mask_test(i):
                 inherited = f'{"" if self.was_added_by_rule(i) else "(I)"}'
                 vs.append(f'{v.name}{inherited}')
@@ -320,7 +318,7 @@ class NameSpace(object):
         self.counter = 0
         self.name_index_map = {}
         self.tree = treelib.Tree()
-        self.vs = []
+        self.vs = Node.vs
         self.processing_rules = True
 
     def space(self, name: str, create: bool = True) -> Optional[int]:
@@ -654,7 +652,7 @@ class NameSpace(object):
                     node = self.tree.create_node(tag=comp,
                                                  identifier=child_pth_digest,
                                                  parent=parent_pth_digest,
-                                                 data=Node(child_pth, self.vs))
+                                                 data=Node(child_pth))
                 parent_pth = child_pth
                 parent_pth_digest = child_pth_digest
         if is_creation and self.processing_rules:
