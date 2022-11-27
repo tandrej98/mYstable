@@ -39,6 +39,7 @@ import sys
 import graphlib
 import treelib
 import hashlib
+import re
 from itertools import chain
 from typing import Optional
 from os.path import normpath, basename, split, join
@@ -312,7 +313,7 @@ class Node:
             active_mask = self.positive_mask
         return active_mask.was_set_by_rule(space_id)
 
-    def active_space_names(self) -> list:
+    def active_spaces(self) -> list[int]:
         """
         Construct a list of virtual spaces that this node belongs to.
 
@@ -325,9 +326,9 @@ class Node:
         list of space names that this node belongs to.
         """
         virtual_spaces = []
-        for idx, space in enumerate(Node.vs):
-            if self.spaces_mask_test(idx):
-                virtual_spaces.append(space.name)
+        for space in Node.vs:
+            if self.spaces_mask_test(space.index):
+                virtual_spaces.append(space.index)
         return virtual_spaces
 
     @property
@@ -378,6 +379,8 @@ class NameSpace(object):
         store each space properties
     processing_rules : bool
         track whether the namespace is processing rules or inheritance
+    interpreter : RuleInterpreter
+        interprets custom regex paths
 
 
 
@@ -440,6 +443,7 @@ class NameSpace(object):
         self.tree = treelib.Tree()
         self.vs = Node.vs
         self.processing_rules = True
+        self.interpreter = RuleInterpreter()
 
     def space(self, name: str, create: bool = True) -> Optional[int]:
         """
@@ -484,10 +488,13 @@ class NameSpace(object):
         """
         space_id = self.space(s_name)
         for pth in paths:
-            if pth[0] != '/':
-                self.vs[space_id].subspaces_add.append(pth)
+            if pth[0] == '/' or pth.startswith(RuleInterpreter.recursive_pref):
+                new_adds, new_subs = self.interpreter.interpret_add_rule(pth)
+                self.vs[space_id].nodes_add.extend(new_adds)
+                self.vs[space_id].nodes_sub.extend(new_subs)
+
             else:
-                self.vs[space_id].nodes_add.append(pth)
+                self.vs[space_id].subspaces_add.append(pth)
 
     def space_sub(self, s_name: str, *paths: str) -> None:
         """
@@ -505,6 +512,7 @@ class NameSpace(object):
         -------
         None
         """
+        # TODO: interpret sub paths
         space_id = self.space(s_name)
         for pth in paths:
             if pth[0] != '/':
@@ -647,7 +655,7 @@ class NameSpace(object):
         pth : str
             path of target node
         new_nodes : dict
-            a dictionary of path -> spaces, of nodes yet to be added to tree
+            a dictionary of path -> space_id, of nodes yet to be added to tree
 
         Returns
         ------
@@ -657,7 +665,7 @@ class NameSpace(object):
         rec_sibling = _find_recursive_node(siblings)
 
         if isinstance(rec_sibling, treelib.node.Node):
-            rec_spaces = rec_sibling.data.active_space_names()
+            rec_spaces = rec_sibling.data.active_spaces()
         else:
             rec_spaces = list()
 
@@ -682,7 +690,7 @@ class NameSpace(object):
         # TODO: only processing adding nodes, so far
         added_nodes = defaultdict(list)
         for nid in self.tree.expand_tree(
-                filter=lambda n: '.*' not in n.data.path
+                filter=lambda n: '.*' != n.tag
         ):
             if _find_recursive_node(self.tree.children(nid)) is None:
                 path = self.tree.get_node(nid).data.path
@@ -697,9 +705,9 @@ class NameSpace(object):
 
                     if not parent_recursive_spaces:
                         self._node_for_path(rec_path, True)
-                    for space in parent_recursive_spaces:
-                        self.space_add(space, rec_path)
-                        added_nodes[rec_path].append(space)
+                    for space_id in parent_recursive_spaces:
+                        self.vs[space_id].nodes_add.append(rec_path)
+                        added_nodes[rec_path].append(space_id)
 
     def _space_update_internal(self) -> None:
         """
@@ -821,6 +829,198 @@ class NameSpace(object):
         hasher = hashlib.md5(usedforsecurity=self.PATH_SECURE_HASH)
         hasher.update(input)
         return hasher.digest()
+
+
+class RuleInterpreter:
+    """
+    A class which interprets custom regex rules to basic add and sub rules.
+
+    ...
+
+    Attributes
+    ----------
+    recursive_pref : str
+        a constant holding the recursive configuration keyword
+    single_rec_block : str
+        a constant holding the single asterisk child suffix
+    double_rec_block : str
+        a constant holding the double asterisk child suffix
+    recursive_regex: str
+        a constant holding the recursive regex constant
+
+
+
+    Methods
+    -------
+    interpret_add_rule(path):
+        translate custom regex add rules to simple add rules
+    """
+    recursive_pref = 'recursive '
+    single_rec_block = '*'
+    double_rec_block = '**'
+    recursive_regex = '.*'
+    cust_double_non_end = re.compile(r'\*\*(?!/$)(?!$)')
+    cust_single_non_end = re.compile(r'/\*/(?!/$)(?!$)')
+
+    def interpret_add_rule(self, path: str) -> tuple[list[str], list[str]]:
+        """
+        Translate a custom regex input rule to simple add rules.
+
+        Parameters
+        ----------
+        path : str
+            input rule path to be translated
+
+        Return
+        ------
+        add_paths : list[str]
+            a list of translated simple add rules
+        sub_paths : list[str]
+            a list of translated simple sub rules
+        """
+        self._validate_rule(path)
+        add_rules = []
+        sub_rules = []
+
+        add_processed, sub_processed = self._proc_middle(path)
+
+        add_ending, sub_ending = self._proc_ending([add_processed])
+        add_rules.extend(add_ending)
+        sub_rules.extend(sub_ending)
+
+        add_ending, sub_ending = self._proc_ending(sub_processed)
+        sub_rules.extend(add_ending)
+        sub_rules.extend(sub_ending)
+
+        return add_rules, sub_rules
+
+    def _proc_ending(self, paths: list[str]) -> tuple[list[str], list[str]]:
+        """
+        Translate custom regex ending blocks of the processed rule.
+
+        Parameters
+        ----------
+        paths : list[str]
+            input rule paths to be translated
+
+        Return
+        ------
+        add_paths : list[str]
+            a list of translated simple add rules
+        sub_paths : list[str]
+            a list of translated simple sub rules
+        """
+        add_paths = []
+        sub_paths = []
+
+        for path in paths:
+            is_recursive = False
+            is_double_rec_suf = False
+            is_single_rec_suf = False
+
+            if path.startswith(self.recursive_pref):
+                path = path.removeprefix(self.recursive_pref)
+                is_recursive = True
+
+            if path.endswith(self.double_rec_block):
+                is_double_rec_suf = True
+                path = path.removesuffix(self.double_rec_block)
+            elif path.endswith(self.single_rec_block):
+                is_single_rec_suf = True
+                path = path.removesuffix(self.single_rec_block)
+
+            is_rec_suf = is_single_rec_suf or is_double_rec_suf
+
+            if is_recursive and not is_rec_suf:
+                add_paths.append(path)
+                add_paths.append(join(path, self.recursive_regex))
+            elif is_double_rec_suf or (is_recursive and is_single_rec_suf):
+                add_paths.append(join(path, self.recursive_regex))
+            elif not is_recursive and is_single_rec_suf:
+                first_child_pth = join(path, self.recursive_regex)
+                add_paths.append(join(first_child_pth))
+                sub_paths.append(join(first_child_pth, self.recursive_regex))
+            else:
+                add_paths.append(path)
+
+        return add_paths, sub_paths
+
+    def _proc_middle(self, path: str) -> tuple[str, list[str]]:
+        """
+        Translate custom regex blocks that are not the ending blocks of the
+        processed rule.
+
+        Parameters
+        ----------
+        path : str
+            input rule path to be translated
+
+        Return
+        ------
+        add_paths : list[str]
+            a list of translated simple add rules
+        sub_paths : list[str]
+            a list of translated simple sub rules
+        """
+        substituted = re.sub(
+                self.cust_double_non_end,
+                self.recursive_regex,
+                path
+            )
+        processed = self._proc_single_mid_rec_rule(substituted)
+        return processed[0], processed[1:]
+
+    def _proc_single_mid_rec_rule(self, path: str) -> list[str]:
+        """
+        Translate custom single asterix regex blocks that are not the ending
+        blocks of the processed rule.
+
+        !CAUTION!: recursion is used, computation time is n^2 because every
+        /*/ block creates two rules by itself
+
+        Parameters
+        ----------
+        path : str
+            input rule path to be translated
+
+        Return
+        ------
+        output : list[str]
+            a list of translated simple rules, first is add-rules, others are
+            sub-rules
+        """
+        if not re.search(self.cust_single_non_end, path):
+            return [path]
+
+        output = []
+        output.extend(
+            self._proc_single_mid_rec_rule(
+                re.sub(self.cust_single_non_end, '/.*/', path, 1)
+            )
+        )
+        output.extend(
+            self._proc_single_mid_rec_rule(
+                re.sub(self.cust_single_non_end, '/.*/.*/', path, 1)
+            )
+        )
+        return output
+
+    def _validate_rule(self, path: str) -> None:
+        """
+        Check that the input rule is valid.
+
+        Parameters
+        ----------
+        path : str
+            input rule path to be validated
+
+        Return
+        ------
+        None
+        """
+        path_parts = path.split(self.recursive_pref)
+        if len(path_parts) > 1 and path_parts[1][0] != '/':
+            raise ValueError("A subspace cannot use recursive keyword")
 
 
 class VirtualSpace:
