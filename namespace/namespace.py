@@ -61,6 +61,126 @@ def _find_recursive_node(nodes: list) -> treelib.node.Node | None:
     return next(filter(lambda c: c.tag == '.*', nodes), None)
 
 
+class SpaceBitmask:
+    """
+    A class where bitmask data about active spaces and whether they were
+    activated by a rule or not is stored and managed.
+
+    ...
+
+    Attributes
+    ----------
+    space_mask : int
+        bitmask containing active spaces
+    by_rule_mask : int
+        bitmask that tracks if the space was set by a rule
+
+    Methods
+    -------
+    is_space_set(space_id):
+        Check if requested bit is set.
+
+    mask_set(space_id):
+        Activate bit with given id.
+
+    mask_unset(space_id):
+        Deactivate bit with given id.
+
+    was_set_by_rule():
+        Check if the requested space was set by a rule.
+    """
+    def __init__(self):
+        """
+        Constructor of SpaceBitMask class, necessary attributes are initialized
+        here.
+
+        Each Node has its own bitmask(space_mask). Each bit represents one
+        space, if is bit set to 1 given Node belongs to this space, otherwise
+        not.
+
+        Parameters
+        ----------
+        None
+        """
+        self.space_mask = 0
+        self.by_rule_mask = 0
+
+    def mask_set(self, space_id: int, by_rule: bool = True) -> None:
+        """
+        Set the space_id-th bit in this bitmask. Use logical OR between this
+        bitmask and a bitmask where is space_id-th bit is set.
+
+        Parameters
+        ----------
+        space_id : int
+            index of space we want to activate.
+        by_rule : bool
+            tracks if space was set by a rule or not
+
+        Returns
+        -------
+        None
+        """
+        if by_rule:
+            self.by_rule_mask = self.by_rule_mask | (1 << space_id)
+
+        self.space_mask = self.space_mask | (1 << space_id)
+
+    def mask_unset(self, space_id: int, by_rule: bool = True):
+        """
+        Unset the space_id-th bit in this bitmask. Use logical AND between this
+        bitmask and a bitmask where is space_id-th bit is unset.
+
+        Parameters
+        ----------
+        space_id : int
+            index of space we want to deactivate.
+        by_rule : bool
+            tracks if space was unset by a rule or not
+
+        Returns
+        -------
+        None
+        """
+        if by_rule:
+            self.by_rule_mask = self.by_rule_mask | (1 << space_id)
+
+        self.space_mask = self.space_mask & ~(1 << space_id)
+
+    def is_space_set(self, space_id: int) -> bool:
+        """
+        Check the space bitmask if the space is active. Logical AND between
+        this bitmask and the supplied one is used.
+
+        Parameters
+        ----------
+        space_id : int
+            index of space we want to test.
+
+        Returns
+        -------
+        True or False, representing whether the space is set in this mask.
+        """
+        return (self.space_mask & (1 << space_id)) != 0
+
+    def was_set_by_rule(self, space_id: int) -> bool:
+        """
+        Check if a space was set by a rule or not. Take by rule bitmask and do
+        logical AND operation with second bitmask where only space_id-th bit
+        is set.
+
+        Parameters
+        ----------
+        space_id : int
+            index of space we want to check if set by rule.
+
+        Returns
+        -------
+        True or False, if checked space was set by a rule returns True .
+        """
+        return (self.by_rule_mask & (1 << space_id)) != 0
+
+
 class Node:
     """
     A class where bitmask of a Node is stored and managed.
@@ -73,10 +193,10 @@ class Node:
         a class attribute containing a list of all existing virtual spaces
     path : str
         name of given Node.
-    spaces_mask : int
-        bitmask of a given Node
-    by_rule_mask : int
-        bitmask that tracks if the space was added by a rule
+    positive_mask : SpaceBitmask
+        bitmask tracking enabled spaces
+    negative_mask : SpaceBitmask
+        bitmask tracking disabled spaces
     created_by_rule : bool
         track whether node created by rule or not
 
@@ -113,14 +233,14 @@ class Node:
             Is Node created by rule or not.
         """
         self.path = path
-        self.spaces_mask = 0
-        self.by_rule_mask = 0
+        self.positive_mask = SpaceBitmask()
+        self.negative_mask = SpaceBitmask()
         self.created_by_rule = created_by_rule
 
     def spaces_mask_test(self, space_id: int) -> bool:
         """
-        Take bitmask of a given Node and make logical AND operation with second
-        bitmask where is n-th bit active.
+        Take bitmask of a given Node and check if the space is set in positive
+        bitmask and also not set in negative bitmask.
 
         Parameters
         ----------
@@ -129,14 +249,15 @@ class Node:
 
         Returns
         -------
-        True or False, if a space is activate returns True .
+        True or False, if a space is active returns True .
         """
-        return (self.spaces_mask & (1 << space_id)) != 0
+        return self.positive_mask.is_space_set(space_id) and\
+            not self.negative_mask.is_space_set(space_id)
 
     def spaces_mask_set(self, space_id: int, by_rule: bool = True) -> None:
         """
-        Take bitmask of a Node and make logical OR with bitmask where is n-th
-        bit activated.
+        Activate space by setting space as active in the positive bitmask of
+        this Node.
 
         Parameters
         ----------
@@ -149,15 +270,12 @@ class Node:
         -------
         None
         """
-        if by_rule:
-            self.by_rule_mask = self.by_rule_mask | (1 << space_id)
-
-        self.spaces_mask = self.spaces_mask | (1 << space_id)
+        self.positive_mask.mask_set(space_id, by_rule)
 
     def spaces_mask_unset(self, space_id: int, by_rule: bool = True) -> None:
         """
-        Take bitmask of a Node and make logical AND with bitmask where is n-th
-        bit activated.
+        Deactivate this space by setting space as active in the negative
+        bitmask of this Node.
 
         Parameters
         ----------
@@ -170,10 +288,7 @@ class Node:
         -------
         None
         """
-        if by_rule:
-            self.by_rule_mask = self.by_rule_mask | (1 << space_id)
-
-        self.spaces_mask = self.spaces_mask & ~(1 << space_id)
+        self.negative_mask.mask_set(space_id, by_rule)
 
     def was_added_by_rule(self, space_id: int) -> bool:
         """
@@ -190,7 +305,12 @@ class Node:
         -------
         True or False, if a space was added by a rule returns True .
         """
-        return (self.by_rule_mask & (1 << space_id)) != 0
+
+        if self.negative_mask.is_space_set(space_id):
+            active_mask = self.negative_mask
+        else:
+            active_mask = self.positive_mask
+        return active_mask.was_set_by_rule(space_id)
 
     def active_space_names(self) -> list:
         """
