@@ -182,6 +182,26 @@ class SpaceBitmask:
         return (self.by_rule_mask & (1 << space_id)) != 0
 
 
+def prep_space_info(index: int, mask: SpaceBitmask) -> str:
+    """
+    Prepare a string with virtual space name and the inherited (I) flag if
+    needed.
+
+    Parameters
+    ----------
+    index : int
+        index of space we want to process.
+    mask: SpaceBitmask
+        mask in which we want to check the presence of the virtual space
+
+    Returns
+    -------
+    String with virtual space name and needed flags.
+    """
+    is_inherited = f'{"" if mask.was_set_by_rule(index) else "(I)"}'
+    return f'{Node.vs[index].name}{is_inherited}'
+
+
 class Node:
     """
     A class where bitmask of a Node is stored and managed.
@@ -353,9 +373,10 @@ class Node:
         by_rule = f'{"(R)" if self.created_by_rule else ""}'
 
         for i, v in enumerate(Node.vs):
-            if self.spaces_mask_test(i):
-                inherited = f'{"" if self.was_added_by_rule(i) else "(I)"}'
-                vs.append(f'{v.name}{inherited}')
+            if self.positive_mask.is_space_set(i):
+                vs.append(prep_space_info(i, self.positive_mask))
+            if self.negative_mask.is_space_set(i):
+                vs.append('-' + prep_space_info(i, self.negative_mask))
 
         return f'{name}{by_rule} vs={vs}'
 
