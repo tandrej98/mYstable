@@ -875,6 +875,14 @@ class RuleInterpreter:
     -------
     interpret_add_rule(path):
         translate custom regex add rules to simple add rules
+    _proc_ending(paths):
+        translate custom regex add rules at the end of the processed rule
+    _proc_middle(path):
+        translate custom regex add rules not at the end of the processed rule
+    _proc_single_mid_rec_rule(path):
+        translate custom * regex that is not at the ned of the processed rule
+    _validate_rule(path):
+        validate the rule and log the necessary information
     """
     recursive_pref = 'recursive '
     single_rec_block = '*'
@@ -996,7 +1004,7 @@ class RuleInterpreter:
         Translate custom single asterix regex blocks that are not the ending
         blocks of the processed rule.
 
-        !CAUTION!: recursion is used, computation time is n^2 because every
+        !CAUTION!: recursion is used, computation time is 2^n because every
         /*/ block creates two rules by itself
 
         Parameters
