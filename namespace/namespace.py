@@ -533,13 +533,15 @@ class NameSpace(object):
         -------
         None
         """
-        # TODO: interpret sub paths
         space_id = self.space(s_name)
         for pth in paths:
-            if pth[0] != '/':
-                self.vs[space_id].subspaces_sub.append(pth)
+            if pth[0] == '/' or pth.startswith(RuleInterpreter.recursive_pref):
+                new_adds, new_subs = self.interpreter.interpret_sub_rule(pth)
+                self.vs[space_id].nodes_add.extend(new_adds)
+                self.vs[space_id].nodes_sub.extend(new_subs)
+
             else:
-                self.vs[space_id].nodes_sub.append(pth)
+                self.vs[space_id].subspaces_sub.append(pth)
 
     def space_test(self, s_name: str, *paths: str) -> bool:
         """
@@ -874,7 +876,9 @@ class RuleInterpreter:
     Methods
     -------
     interpret_add_rule(path):
-        translate custom regex add rules to simple add rules
+        translate custom regex addition rules to simple rules
+    interpret_sub_rule(path)
+        translate custom regex subtraction rules to simple rules
     _proc_ending(paths):
         translate custom regex add rules at the end of the processed rule
     _proc_middle(path):
@@ -893,7 +897,8 @@ class RuleInterpreter:
 
     def interpret_add_rule(self, path: str) -> tuple[list[str], list[str]]:
         """
-        Translate a custom regex input rule to simple add rules.
+        Translate an addition rule containing custom regex input to simple
+        rules addition and subtraction rules.
 
         Parameters
         ----------
@@ -926,6 +931,26 @@ class RuleInterpreter:
         except ValueError as e:
             print(str(e))
             return [], []
+
+    def interpret_sub_rule(self, path: str) -> tuple[list[str], list[str]]:
+        """
+        Translate a subtraction rule containing custom regex input to simple
+        rules addition and subtraction rules.
+
+        Parameters
+        ----------
+        path : str
+            input rule path to be translated
+
+        Return
+        ------
+        add_paths : list[str]
+            a list of translated simple add rules
+        sub_paths : list[str]
+            a list of translated simple sub rules
+        """
+        add_list, sub_list = self.interpret_add_rule(path)
+        return sub_list, add_list
 
     def _proc_ending(self, paths: list[str]) -> tuple[list[str], list[str]]:
         """
