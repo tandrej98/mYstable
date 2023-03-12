@@ -67,6 +67,7 @@ class TestNameSpace(unittest.TestCase):
         ------
         None
         """
+        namespace.Node.vs = []
         self.ns = namespace.NameSpace()
 
     def test_space_add(self) -> None:
