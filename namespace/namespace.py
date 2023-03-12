@@ -333,9 +333,10 @@ class Node:
             active_mask = self.positive_mask
         return active_mask.was_set_by_rule(space_id)
 
-    def active_spaces(self) -> list[int]:
+    def active_spaces(self) -> tuple[list[int], list[int]]:
         """
-        Construct a list of virtual spaces that this node belongs to.
+        Construct lists of virtual spaces that this node belongs to and that
+        this node is restricted from.
 
         Parameters
         ----------
@@ -343,13 +344,17 @@ class Node:
 
         Returns
         ------
-        list of space names that this node belongs to.
+        pos_spaces: list of space names that this node belongs to
+        neg_spaces: list of space names that this node is restricted from
         """
-        virtual_spaces = []
+        pos_spaces = []
+        neg_spaces = []
         for space in Node.vs:
-            if self.spaces_mask_test(space.index):
-                virtual_spaces.append(space.index)
-        return virtual_spaces
+            if self.positive_mask.is_space_set(space.index):
+                pos_spaces.append(space.index)
+            if self.negative_mask.is_space_set(space.index):
+                neg_spaces.append(space.index)
+        return pos_spaces, neg_spaces
 
     @property
     def node_info(self) -> str:
@@ -667,7 +672,9 @@ class NameSpace(object):
         self._process_regex_nodes()
         self._space_update_internal()
 
-    def _recursive_spaces(self, nid: bytes, pth: str, new_nodes: dict) -> list:
+    def _recursive_spaces(self, nid: bytes, pth: str,
+                          pos_new_nodes: dict,
+                          neg_new_nodes: dict) -> tuple[list, list]:
         """
         Find all spaces the recursive sibling of node with nid belongs to.
 
@@ -677,25 +684,34 @@ class NameSpace(object):
             node id of target node
         pth : str
             path of target node
-        new_nodes : dict
+        pos_new_nodes : dict
             a dictionary of path -> space_id, of nodes yet to be added to tree
+            with added spaces
+        neg_new_nodes : dict
+            a dictionary of path -> space_id, of nodes yet to be added to tree
+            with subtracted spaces
 
         Returns
         ------
-        list of spaces the selected nodes recursive child should belong to
+        pos_spaces: list of spaces the selected nodes recursive child should
+                    belong to
+        neg_spaces: list of spaces the selected nodes recursive child should
+                    be restricted from
         """
         siblings = self.tree.siblings(nid)
         rec_sibling = _find_recursive_node(siblings)
 
         if isinstance(rec_sibling, treelib.node.Node):
-            rec_spaces = rec_sibling.data.active_spaces()
+            pos_spaces, neg_spaces = rec_sibling.data.active_spaces()
         else:
-            rec_spaces = list()
+            pos_spaces = list()
+            neg_spaces = list()
 
         rec_sibling_pth = join(split(pth)[0], '.*')
-        rec_spaces.extend(new_nodes[rec_sibling_pth])
+        pos_spaces.extend(pos_new_nodes[rec_sibling_pth])
+        neg_spaces.extend(neg_new_nodes[rec_sibling_pth])
 
-        return rec_spaces
+        return pos_spaces, neg_spaces
 
     def _process_regex_nodes(self) -> None:
         """
@@ -710,8 +726,8 @@ class NameSpace(object):
         ------
         None
         """
-        # TODO: only processing adding nodes, so far
-        added_nodes = defaultdict(list)
+        add_nodes = defaultdict(list)
+        sub_nodes = defaultdict(list)
         for nid in self.tree.expand_tree(
                 filter=lambda n: '.*' != n.tag
         ):
@@ -723,14 +739,17 @@ class NameSpace(object):
                     # As tree is searched from root in depth, the parent node
                     # should already have an initialized recursive node
                     rec_path = join(path, '.*')
-                    parent_recursive_spaces = \
-                        self._recursive_spaces(nid, path, added_nodes)
+                    parent_rec_add_spaces, parent_rec_sub_spaces = \
+                        self._recursive_spaces(nid, path, add_nodes, sub_nodes)
 
-                    if not parent_recursive_spaces:
+                    if not parent_rec_add_spaces and not parent_rec_sub_spaces:
                         self._node_for_path(rec_path, True)
-                    for space_id in parent_recursive_spaces:
+                    for space_id in parent_rec_add_spaces:
                         self.vs[space_id].nodes_add.append(rec_path)
-                        added_nodes[rec_path].append(space_id)
+                        add_nodes[rec_path].append(space_id)
+                    for space_id in parent_rec_sub_spaces:
+                        self.vs[space_id].nodes_sub.append(rec_path)
+                        sub_nodes[rec_path].append(space_id)
 
     def _space_update_internal(self) -> None:
         """
