@@ -667,10 +667,14 @@ class NameSpace(object):
         ------
         None
         """
-        self._space_update_internal()
-        self.processing_rules = False
-        self._process_regex_nodes()
-        self._space_update_internal()
+        try:
+            self._space_update_internal()
+            self.processing_rules = False
+            self._process_regex_nodes()
+            self._space_update_internal()
+        except graphlib.CycleError:
+            print("Cycle detected", file=sys.stderr)
+            return
 
     def _recursive_spaces(self, nid: bytes, pth: str,
                           pos_new_nodes: dict,
@@ -764,13 +768,7 @@ class NameSpace(object):
         ------
         None
         """
-        try:
-            topo_order = self._build_topo()
-        except graphlib.CycleError:
-            print("Cycle detected", file=sys.stderr)
-            return
-
-        for space_id in topo_order:
+        for space_id in self._build_topo():
             space = self.vs[space_id]
             self._space_add_real(space.name, *space.nodes_add)
             for subspace_name in space.subspaces_add:
