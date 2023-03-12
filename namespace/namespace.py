@@ -907,21 +907,25 @@ class RuleInterpreter:
         sub_paths : list[str]
             a list of translated simple sub rules
         """
-        self._validate_rule(path)
-        add_rules = []
-        sub_rules = []
+        try:
+            self._validate_rule(path)
+            add_rules = []
+            sub_rules = []
 
-        add_processed, sub_processed = self._proc_middle(path)
+            add_processed, sub_processed = self._proc_middle(path)
 
-        add_ending, sub_ending = self._proc_ending([add_processed])
-        add_rules.extend(add_ending)
-        sub_rules.extend(sub_ending)
+            add_ending, sub_ending = self._proc_ending([add_processed])
+            add_rules.extend(add_ending)
+            sub_rules.extend(sub_ending)
 
-        add_ending, sub_ending = self._proc_ending(sub_processed)
-        sub_rules.extend(add_ending)
-        sub_rules.extend(sub_ending)
+            add_ending, sub_ending = self._proc_ending(sub_processed)
+            sub_rules.extend(add_ending)
+            sub_rules.extend(sub_ending)
 
-        return add_rules, sub_rules
+            return add_rules, sub_rules
+        except ValueError as e:
+            print(str(e))
+            return [], []
 
     def _proc_ending(self, paths: list[str]) -> tuple[list[str], list[str]]:
         """
@@ -1049,7 +1053,8 @@ class RuleInterpreter:
         """
         path_parts = path.split(self.recursive_pref)
         if len(path_parts) > 1 and path_parts[1][0] != '/':
-            raise ValueError("A subspace cannot use recursive keyword")
+            raise ValueError('A subspace cannot use recursive keyword, '
+                             'skipping rule')
 
 
 class VirtualSpace:
