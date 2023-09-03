@@ -413,17 +413,18 @@ class NameSpace(object):
     Methods
     -------
     space(name, create):
-        check if space exists if don't make entry into dict, returns index of
-        space.
+        check whether space exists if not then make entry into dict, returns
+        index of space.
 
     space_add(s_name, *paths):
         add paths or spaces to denoted lists that are to be added to space
 
     space_sub(s_name, *paths):
-        add paths or spaces to denoted lists that are to be substracted from
+        add paths or spaces to denoted lists that are to be subtracted from
         space
 
     space_test(s_name, *paths):
+        Check whether the supplied space contains all the paths.
 
     print():
         Print the contents of the namespace.
@@ -524,7 +525,7 @@ class NameSpace(object):
 
     def space_sub(self, s_name: str, *paths: str) -> None:
         """
-        Add paths or spaces to denoted lists that are to be substracted from
+        Add paths or spaces to denoted lists that are to be subtracted from
         space.
 
         Parameters
@@ -532,7 +533,7 @@ class NameSpace(object):
         s_name : str
             name of space
         *paths : str
-            paths that we want to substract from space
+            paths that we want to subtract from space
 
         Returns
         -------
@@ -873,7 +874,8 @@ class NameSpace(object):
 
 class RuleInterpreter:
     """
-    A class which interprets custom regex rules to basic add and sub rules.
+    A class which interprets custom regex rules to basic addition and
+    subtraction rules.
 
     ...
 
@@ -887,6 +889,12 @@ class RuleInterpreter:
         a constant holding the double asterisk child suffix
     recursive_regex: str
         a constant holding the recursive regex constant
+    cust_double_non_end:
+        a constant holding the compiled regex for detecting double
+        asterisk components that are not at the end of the line
+    cust_single_non_end:
+        a constant holding the compiled regex for detecting single
+        asterisk components that are not at the end of the line
 
 
 
@@ -915,7 +923,7 @@ class RuleInterpreter:
     def interpret_add_rule(self, path: str) -> tuple[list[str], list[str]]:
         """
         Translate an addition rule containing custom regex input to simple
-        rules addition and subtraction rules.
+        addition and subtraction rules.
 
         Parameters
         ----------
@@ -925,9 +933,9 @@ class RuleInterpreter:
         Return
         ------
         add_paths : list[str]
-            a list of translated simple add rules
+            a list of translated simple addition rules
         sub_paths : list[str]
-            a list of translated simple sub rules
+            a list of translated simple subtraction rules
         """
         try:
             self._validate_rule(path)
@@ -951,8 +959,10 @@ class RuleInterpreter:
 
     def interpret_sub_rule(self, path: str) -> tuple[list[str], list[str]]:
         """
-        Translate a subtraction rule containing custom regex input to simple
-        rules addition and subtraction rules.
+        Translate a subtraction rule containing custom regex input to
+        simple rules addition and subtraction rules. In reality
+        interpret as a regex add rule and switch the resulting addition
+        and subtraction rule lists.
 
         Parameters
         ----------
